@@ -8,7 +8,7 @@ from tkinter import messagebox
 from pygame.image import load
 from glob import glob
 
-from editor.settings import *
+from src.editor.settings import *
 
 
 class SaveManager:
@@ -40,8 +40,11 @@ class SaveManager:
         parent_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         directory_path = os.path.join(parent_path, directory_path)
         items = os.listdir(directory_path)
-        files = [os.path.join(directory_path, item) for item in items if os.path.isfile(os.path.join(directory_path, item))]
-        return files
+        return [
+            os.path.join(directory_path, item)
+            for item in items
+            if os.path.isfile(os.path.join(directory_path, item))
+        ]
 
     @staticmethod
     def _get_start_cell_coordinates(cell):
@@ -100,10 +103,7 @@ class SaveManager:
         Returns:
             int: The total length of the canvas data.
         """
-        total_length = 0
-        for layer in canvas_data.values():
-            total_length += len(layer)
-        return total_length
+        return sum(len(layer) for layer in canvas_data.values())
 
     def _find_index_and_inner_index(self, image_path):
         """
@@ -122,6 +122,22 @@ class SaveManager:
                     inner_index = paths.index(image_path)
                     return index, inner_index
         return None, None
+    
+    def _get_relative_path(self, file_path, root_path):
+        """
+        Get the relative path of a file. If the file does not exist, return an empty string.
+
+        Args:
+            file_path (str): The absolute path to the file.
+            root_path (str): The root path to make the file path relative to.
+
+        Returns:
+            str: The relative path to the file or an empty string if the file does not exist.
+        """
+        if not file_path or not os.path.exists(file_path):
+            print(f"Warning: No file '{file_path}' found.")
+            return ''
+        return os.path.relpath(file_path, root_path)
 
     def export_tiles(self, path, canvas_data):
         """
@@ -131,6 +147,9 @@ class SaveManager:
             path (str): The path to the CSV file.
             canvas_data (dict): The canvas data.
         """
+        if not path or not canvas_data:
+            raise ValueError("path and canvas_data cannot be None or empty.")
+
         export_data = {
             'layer': [],
             'coords': [],
@@ -146,13 +165,13 @@ class SaveManager:
         }
 
         for layer in range(1, 15):
-            for cell, canvas in canvas_data[layer].items():
-                pos = canvas.free_pos if canvas.free_pos else self._get_start_free_pos_coordinates(cell)
+            for cell, canvas in canvas_data.get(layer, {}).items():
+                pos = canvas.free_pos or self._get_start_free_pos_coordinates(cell)
 
                 export_data['layer'].append(layer)
                 export_data['coords'].append(json.dumps(pos))
-                export_data['image_path'].append(canvas.path_to_image)
-                export_data['animation_path'].append(canvas.animation_dir)
+                export_data['image_path'].append(canvas.path_to_image or '')
+                export_data['animation_path'].append(canvas.animation_dir or '')
                 export_data['is_item'].append(canvas.item)
                 export_data['is_npc'].append(canvas.npc)
                 export_data['is_enemy'].append(canvas.enemy)
@@ -164,26 +183,29 @@ class SaveManager:
         df = pd.DataFrame(export_data)
         df.to_csv(path, index=False)
 
-    def export_colliders(self, path, colider_data):
+    def export_colliders(self, path, collider_data):
         """
         Export the collider data to a CSV file.
 
         Args:
             path (str): The path to the CSV file.
-            colider_data (dict): The collider data.
+            collider_data (dict): The collider data.
         """
+        if not path or not collider_data:
+            raise ValueError("path and collider_data cannot be None or empty.")
+
         export_data = {
             'coords': [],
             'image_path': [],
-            'colider_type': [],
+            'collider_type': [],
         }
 
-        for cell, colider in colider_data.items():
+        for cell, collider in collider_data.items():
             pos = self._get_start_free_pos_coordinates(cell)
 
             export_data['coords'].append(json.dumps(pos))
-            export_data['image_path'].append(colider.path_to_image)
-            export_data['colider_type'].append(colider.colision_type)
+            export_data['image_path'].append(collider.path_to_image or '')
+            export_data['collider_type'].append(collider.collision_type)
 
         df = pd.DataFrame(export_data)
         df.to_csv(path, index=False)
@@ -215,7 +237,7 @@ class SaveManager:
         with open(path, 'w', encoding='utf-8') as json_file:
             json_file.write(json_str)
 
-    def import_tiles(self, path):
+    def import_tiles(self, path):  # Sourcery skip: avoid-builtin-shadow
         """
         Import tile data from a CSV file.
 
@@ -315,7 +337,7 @@ class SaveManager:
         for i in range(len(df)):
             coords = tuple(json.loads(df['coords'][i]))
             image_path = df['image_path'][i]
-            collider_type = df['colider_type'][i]
+            collider_type = df['collider_type'][i]
 
             # Find index and inner index
             index, inner_index = self._find_index_and_inner_index(image_path)
@@ -339,7 +361,7 @@ class SaveManager:
                     animation=None  # Colliders don't use animation
                 )
 
-                collider_obj.colision_type = collider_type
+                collider_obj.collision_type = collider_type
 
                 collider_data[cell] = collider_obj
             else:
@@ -375,7 +397,7 @@ class SaveManager:
 
         return data
 
-    def export_scene(self, dir_path, filename, canvas_data, colider_data):
+    def export_scene(self, dir_path, filename, canvas_data, collider_data):
         """
         Export the entire scene to a directory.
 
@@ -383,24 +405,24 @@ class SaveManager:
             dir_path (str): The directory path.
             filename (str): The filename for the scene.
             canvas_data (dict): The canvas data.
-            colider_data (dict): The collider data.
+            collider_data (dict): The collider data.
         """
+        if not dir_path or not filename or not canvas_data or not collider_data:
+            raise ValueError("dir_path, filename, canvas_data, and collider_data cannot be None or empty.")
+
         dir_path = os.path.join(dir_path, filename)
 
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
-        # Export tiles
-        path = os.path.join(dir_path, 'tiles.csv')
-        self.export_tiles(path, canvas_data)
+        tiles_path = os.path.join(dir_path, 'tiles.csv')
+        self.export_tiles(tiles_path, canvas_data)
 
-        # Export colliders
-        path = os.path.join(dir_path, 'colliders.csv')
-        self.export_colliders(path, colider_data)
+        colliders_path = os.path.join(dir_path, 'colliders.csv')
+        self.export_colliders(colliders_path, collider_data)
 
-        # Export settings
-        path = os.path.join(dir_path, 'settings.json')
-        self.export_settings(path)
+        settings_path = os.path.join(dir_path, 'settings.json')
+        self.export_settings(settings_path)
 
     def import_scene(self, dir_path, filename):
         """

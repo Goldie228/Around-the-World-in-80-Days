@@ -1,17 +1,12 @@
 """Menu system for the editor interface"""
-from typing import Dict, List, Optional, Tuple, Union
 import os
 import math
-from pathlib import Path
 
 import pygame
-from pygame.sprite import Group, Sprite
-from pygame.surface import Surface
-from pygame.rect import Rect
 from pygame.image import load
 
-from settings import WINDOW_WIDTH, WINDOW_HEIGHT
-from editor.settings import (
+from src.settings import WINDOW_WIDTH, WINDOW_HEIGHT
+from src.editor.settings import (
     TILE_SIZE, MENU_MARGIN, EDITOR_DATA,
     BUTTON_BG_COLOR, BUTTON_LINE_COLOR, MENU_LINE_COLOR
 )
@@ -49,8 +44,11 @@ class Menu:
         parent_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
         directory_path = os.path.join(parent_path, directory_path)
         items = os.listdir(directory_path)
-        files = [os.path.join(directory_path, item) for item in items if os.path.isfile(os.path.join(directory_path, item))]
-        return files
+        return [
+            os.path.join(directory_path, item)
+            for item in items
+            if os.path.isfile(os.path.join(directory_path, item))
+        ]
 
     def create_data(self):
         """Create the data for the menu surfaces."""
@@ -158,48 +156,62 @@ class Menu:
         Returns:
             tuple: The selected index, inner selection index, and page number.
         """
-        inner_selection_index = None
-
         if self.inner_mode:
-            max_index_value = self.max_inner_items
-            for i, rect in enumerate(self.inner_sprite.inner_rects):
-                if rect.collidepoint(mouse_pos):
-                    if mouse_buttons[0]:
-                        inner_selection_index = i + (self.max_items_on_page * (inner_page - 1))
+            return self.handle_inner_mode_click(mouse_pos, mouse_buttons, inner_page)
 
-                        if inner_selection_index >= max_index_value:
-                            inner_selection_index = None
-                        elif inner_selection_index >= self.max_items_on_page:
-                            inner_selection_index -= (self.max_items_on_page * (inner_page - 1))
+        return self.handle_normal_mode_click(mouse_pos, mouse_buttons)
 
-                    if mouse_buttons[2] or mouse_buttons[1]:
-                        self.inner_sprite.change_mode()
-                        self.inner_mode = False
-
-                    return None, inner_selection_index, None
-
-        for i, sprite in enumerate(self.buttons):
-            if self.start_page <= i <= self.end_page:
-                if not self.inner_mode and sprite.rect.collidepoint(mouse_pos):
-                    # Find the nearest number in self.indexes to sprite.get_id()
-                    sprite_id = sprite.get_id()
-                    nearest_index = self.indexes.index(min(self.indexes, key=lambda x: abs(x - sprite_id)))
-
-                    if mouse_buttons[1]:
-                        self.inner_mode = not self.inner_mode
-                        sprite.change_mode()
-                        if self.inner_mode:
-                            self.inner_sprite = sprite
-                            self.max_inner_items = sprite.get_max_inner_items()
-
-                    if mouse_buttons[2]:
-                        sprite.switch()
-                        sprite_id = sprite.get_id()
-                        self.indexes[nearest_index] = sprite_id
-
-                    return nearest_index, 0, 1
-
+    def handle_inner_mode_click(self, mouse_pos, mouse_buttons, inner_page):
+        max_index_value = self.max_inner_items
+        for i, rect in enumerate(self.inner_sprite.inner_rects):
+            if rect.collidepoint(mouse_pos):
+                inner_selection_index = self.calculate_inner_selection_index(i, inner_page)
+                if mouse_buttons[0]:
+                    inner_selection_index = self.validate_inner_selection_index(inner_selection_index, max_index_value, inner_page)
+                if mouse_buttons[2] or mouse_buttons[1]:
+                    self.inner_sprite.change_mode()
+                    self.inner_mode = False
+                return None, inner_selection_index, None
         return None, None, None
+
+    def handle_normal_mode_click(self, mouse_pos, mouse_buttons):
+        return next(
+            (
+                self.process_sprite_click(sprite, mouse_buttons)
+                for i, sprite in enumerate(self.buttons)
+                if self.start_page <= i <= self.end_page
+                and sprite.rect.collidepoint(mouse_pos)
+            ),
+            (None, None, None),
+        )
+
+    def calculate_inner_selection_index(self, i, inner_page):
+        return i + (self.max_items_on_page * (inner_page - 1))
+
+    def validate_inner_selection_index(self, inner_selection_index, max_index_value, inner_page):
+        if inner_selection_index >= max_index_value:
+            return None
+        if inner_selection_index >= self.max_items_on_page:
+            return inner_selection_index - (self.max_items_on_page * (inner_page - 1))
+        return inner_selection_index
+
+    def process_sprite_click(self, sprite, mouse_buttons):
+        sprite_id = sprite.get_id()
+        nearest_index = self.indexes.index(min(self.indexes, key=lambda x: abs(x - sprite_id)))
+
+        if mouse_buttons[1]:
+            self.inner_mode = not self.inner_mode
+            sprite.change_mode()
+            if self.inner_mode:
+                self.inner_sprite = sprite
+                self.max_inner_items = sprite.get_max_inner_items()
+
+        if mouse_buttons[2]:
+            sprite.switch()
+            sprite_id = sprite.get_id()
+            self.indexes[nearest_index] = sprite_id
+
+        return nearest_index, 0, 1
 
     def highlight_indicator(self, index, inner_index):
         """

@@ -35,7 +35,7 @@ The game utilizes a layered rendering system to create depth and visual interest
 1. Clone the repository:
 ```bash
 git clone https://github.com/Goldie228/Around-the-World-in-80-Days.git
-cd "Вокруг земли за 80 дней"
+cd "Around-the-World-in-80-Days"
 ```
 
 2. Create and activate a virtual environment:
@@ -56,24 +56,24 @@ pip install -r requirements.txt
 
 4. Run the game:
 ```bash
-python src/main.py
+python main.py
 ```
 
 ## Project Structure
 
 ```
 around-the-world-80-days/
-├── assets/                 # Game assets
-│   ├── editor/            # Editor-specific assets
-│   │   ├── buttons/       # UI buttons
+├── assets/               # Game assets
+│   ├── editor/           # Editor-specific assets
+│   │   ├── buttons/      # UI buttons
 │   │   └── fonts/        # Custom fonts
-│   ├── graphics/          # Game graphics
-│   │   ├── coliders/     # Collision objects
+│   ├── graphics/         # Game graphics
+│   │   ├── colliders/    # Collision objects
 │   │   ├── events/       # Event triggers
 │   │   ├── player/       # Player animations
 │   │   └── tiles/        # World tiles
-│   └── sounds/            # Audio files
-├── src/                   # Source code
+│   └── sounds/           # Audio files
+├── src/                  # Source code
 │   ├── editor/           # Level editor
 │   │   ├── editor.py     # Editor main class
 │   │   ├── menu.py       # Editor menu system
@@ -82,12 +82,14 @@ around-the-world-80-days/
 │   │   ├── level.py      # Level management
 │   │   ├── camera.py     # Camera system
 │   │   └── player.py     # Player mechanics
-│   ├── main.py           # Entry point
 │   ├── save_manager.py   # Save/load system
 │   └── settings.py       # Global settings
+├── output/               # Output game .exe file
+│   └── game.exe          # Executable file after packaging
+│   main.py               # Entry point
 ├── LICENSE               # MIT license
-├── README.md            # This file
-└── requirements.txt     # Dependencies
+├── README.md             # This file
+└── requirements.txt      # Dependencies
 ```
 
 ## Development Setup
@@ -95,9 +97,9 @@ around-the-world-80-days/
 ### Required Dependencies
 
 ```bash
-pip install pygame==2.5.2
-pip install pandas==2.1.4
-pip install auto-py-to-exe==2.42.0
+pip install pygame
+pip install pandas
+pip install auto-py-to-exe
 ```
 
 ### Building an Executable
@@ -121,8 +123,8 @@ auto-py-to-exe
 
 ## Controls
 
-- **WASD** - Camera movement
-- **Space** - Toggle free movement
+- **WASD** - Player movement
+- **Space** - Player jump
 
 - **Mouse** - Tile placement/selection
 - **Ctrl+S** - Save scene

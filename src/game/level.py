@@ -4,8 +4,8 @@ import math
 
 from pygame.math import Vector2
 
-from settings import *
-from save_manager import SaveManager
+from src.settings import *
+from src.save_manager import SaveManager
 
 
 class Level:

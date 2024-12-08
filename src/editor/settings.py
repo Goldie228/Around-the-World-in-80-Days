@@ -7,12 +7,12 @@ from pathlib import Path
 # Core editor settings
 TILE_SIZE: int = 64
 MENU_MARGIN: int = 6
-ANIMATION_SPEED: int = 8
+ANIMATION_SPEED: int = 4
 
 # Asset paths
 ASSETS_PATH = Path('assets')
 GRAPHICS_PATH = ASSETS_PATH / 'graphics'
-COLIDERS_PATH = GRAPHICS_PATH / 'coliders'
+COLLIDERS_PATH = GRAPHICS_PATH / 'colliders'
 EVENTS_PATH = GRAPHICS_PATH / 'events'
 PLAYER_PATH = GRAPHICS_PATH / 'player'
 TILES_PATH = GRAPHICS_PATH / 'tiles'
@@ -22,9 +22,9 @@ EditorDataType = Dict[int, Dict[str, Union[str, Optional[str]]]]
 
 EDITOR_DATA: EditorDataType = {
     0: {
-        'style': 'colider',
-        'menu': 'colider',
-        'menu_surf': str(COLIDERS_PATH),
+        'style': 'collider',
+        'menu': 'collider',
+        'menu_surf': str(COLLIDERS_PATH),
         'graphics': None
     },
     1: {

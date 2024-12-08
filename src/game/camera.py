@@ -1,7 +1,7 @@
 import pygame
 import math
 from pygame.math import Vector2
-from settings import *
+from src.settings import *
 
 
 class Camera:

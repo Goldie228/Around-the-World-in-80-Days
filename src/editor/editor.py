@@ -8,10 +8,10 @@ import pygame
 from pygame.math import Vector2 as vector
 from pygame.mouse import get_pos as mouse_pos, get_pressed as mouse_buttons
 
-from settings import WINDOW_HEIGHT, WINDOW_WIDTH
-from save_manager import SaveManager
-from editor.menu import Menu
-from editor.settings import (
+from src.settings import WINDOW_HEIGHT, WINDOW_WIDTH
+from src.save_manager import SaveManager
+from src.editor.menu import Menu
+from src.editor.settings import (
     TILE_SIZE, MENU_MARGIN, ANIMATION_SPEED, EDITOR_DATA,
     SKY_COLOR, HORIZON_COLOR, HORIZON_TOP_COLOR
 )
@@ -216,26 +216,28 @@ class Editor:
     def adjust_selection(self, increment, value=1):
         """Adjust selection index based on increment."""
         if self.menu.inner_mode:
-            self.start_page = 0
-            max_items = self.max_items_on_page - 1
-            max_inner_items = self.menu.max_inner_items
-            inner_page = self.inner_page
+            self.adjust_inner_selection(increment, value)
+        else:
+            self.adjust_outer_selection(increment, value)
 
-            # Check not to go beyond the limits
-            if max_items * inner_page < max_inner_items - self.max_items_on_page + 1:
-                self.end_page = max_items
-            else:
-                self.end_page = max_items + (max_inner_items - (self.max_items_on_page * inner_page))
-                if self.end_page >= max_items:
-                    self.end_page -= max_items + 1
+    def adjust_inner_selection(self, increment, value):
+        """Adjust inner selection index based on increment."""
+        max_items = self.max_items_on_page - 1
+        max_inner_items = self.menu.max_inner_items
+        inner_page = self.inner_page
 
-            if self.end_page > max_items - ((self.max_items_on_page * self.inner_page) - max_inner_items):
-                self.end_page = max_items - ((self.max_items_on_page * self.inner_page) - max_inner_items)
+        self.end_page = min(max_items, max_inner_items - (self.max_items_on_page * inner_page - max_items + 1))
+        
+        if self.end_page >= max_items:
+            self.end_page -= max_items + 1
 
-            self.selection_inner_index += value if increment else -value
-            self.validate_selection_inner_index()
-            return
+        self.end_page = min(self.end_page, max_items - ((self.max_items_on_page * self.inner_page) - max_inner_items))
 
+        self.selection_inner_index += value if increment else -value
+        self.validate_selection_inner_index()
+
+    def adjust_outer_selection(self, increment, value):
+        """Adjust outer selection index based on increment."""
         self.start_page = 0 if self.page == 1 else self.max_items_on_page * (self.page - 1)
         self.end_page = min(self.start_page + self.max_items_on_page - 1, len(self.menu.indexes) - 1)
 
@@ -259,7 +261,7 @@ class Editor:
             self.buttons_is_over()
             self.menu_click(event)
             self.check_free_move(event)
-            self.canvas_add(event)
+            self.canvas_add()
 
             if event.type == pygame.KEYDOWN:
                 self.save_scene_hotkeys(event)
@@ -320,9 +322,7 @@ class Editor:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LCTRL:
                 self.free_move = True
-            return
-
-        if event.type == pygame.KEYUP:
+        elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LCTRL:
                 self.free_move = False
 
@@ -354,7 +354,7 @@ class Editor:
             self.inner_page = inner_page if inner_page is not None else self.inner_page
 
     # Canvas methods
-    def canvas_add(self, event):
+    def canvas_add(self):
         """
         Handle adding elements to the canvas based on mouse events.
 
@@ -387,8 +387,6 @@ class Editor:
     def handle_right_click(self):
         """Handle right mouse button click on the canvas."""
         current_cell = self.get_current_cell()
-        print(current_cell)
-        print(self.canvas_data[self.layer])
 
         if current_cell in self.canvas_data[self.layer]:
             del self.canvas_data[self.layer][current_cell]
@@ -431,48 +429,56 @@ class Editor:
         Args:
             current_cell (tuple): The coordinates of the current cell.
         """
-        # Retrieve options for the current selection
-        options = {key: value for key, value in EDITOR_DATA[self.menu.indexes[self.selection_index]].items()}
-        is_colider = options['menu'] == 'colider'
+        options = dict(EDITOR_DATA[self.menu.indexes[self.selection_index]])
+        is_collider = options['menu'] == 'collider'
         paths = self.menu.get_files_in_directory(options['menu_surf'])
 
-        animation = None
-
         if self.menu.inner_mode:
-            # Handle inner mode selection
-            image = self.menu.inner_sprite.inner_images_to_draw[self.selection_inner_index]
-            path = paths[self.selection_inner_index + ((self.inner_page - 1) * self.max_items_on_page)]
-
-            if not is_colider:
-                for element in self.menu.inner_sprite.animation:
-                    if self.menu.indexes[self.selection_index] in element:
-                        animation = element[self.menu.indexes[self.selection_index]]
+            image, path, animation = self._handle_inner_mode(paths, is_collider)
         else:
-            # Handle normal mode selection
-            image = None
-            for i, sprite in enumerate(self.menu.buttons):
-                if i == self.selection_index:
-                    image = sprite.items[sprite.index][2][0]
+            image, path, animation = self._handle_normal_mode(paths, is_collider)
 
-                    if not is_colider:
-                        for element in sprite.animation:
-                            if self.menu.indexes[self.selection_index] in element:
-                                animation = element[self.menu.indexes[self.selection_index]]
-                    break
-            path = paths[0]
-
-        # Check for existing collider data
-        if is_colider:
-            if not self.can_add_colider(current_cell, path):
+        if is_collider:
+            if self.can_add_collider(current_cell, path):
                 return
-
-        # Add new element to canvas data
-        if not is_colider:
-            self.add_canvas_object(current_cell, image, path, animation)
+            self.add_collider_object(current_cell, image, path, animation)
         else:
-            self.add_colider_object(current_cell, image, path, animation)
+            self.add_canvas_object(current_cell, image, path, animation)
 
-    def can_add_colider(self, current_cell, path):
+
+    def _handle_inner_mode(self, paths, is_collider):
+        image = self.menu.inner_sprite.inner_images_to_draw[self.selection_inner_index]
+        path = paths[self.selection_inner_index + ((self.inner_page - 1) * self.max_items_on_page)]
+
+        animation = None
+        if not is_collider:
+            animation = self._find_animation(self.menu.inner_sprite.animation)
+
+        return image, path, animation
+
+    def _handle_normal_mode(self, paths, is_collider):
+        image = None
+        animation = None
+        path = paths[0]
+        for i, sprite in enumerate(self.menu.buttons):
+            if i == self.selection_index:
+                image = sprite.items[sprite.index][2][0]
+                if not is_collider:
+                    animation = self._find_animation(sprite.animation)
+                break
+        return image, path, animation
+
+    def _find_animation(self, animations):
+        return next(
+            (
+                element[self.menu.indexes[self.selection_index]]
+                for element in animations
+                if self.menu.indexes[self.selection_index] in element
+            ),
+            None,
+        )
+
+    def can_add_collider(self, current_cell, path):
         """
         Check if a collider can be added to the specified cell.
 
@@ -483,12 +489,14 @@ class Editor:
         Returns:
             bool: True if the collider can be added, False otherwise.
         """
-        if current_cell in self.collider_data:
-            colider_type = os.path.basename(path).replace('.png', '')
-            if self.collider_data[current_cell].colision_type == colider_type:
-                return False
-        if self.layer < 9:
+        if self.layer != 10:
             return False
+        
+        if current_cell in self.collider_data:
+            collider_type = os.path.basename(path).replace('.png', '')
+            if self.collider_data[current_cell].collision_type == collider_type:
+                return False
+                
         return True
 
     def add_canvas_object(self, current_cell, image, path, animation):
@@ -520,7 +528,7 @@ class Editor:
             animation
         )
 
-    def add_colider_object(self, current_cell, image, path, animation):
+    def add_collider_object(self, current_cell, image, path, animation):
         """
         Add a collider object to the specified cell.
 
@@ -550,14 +558,14 @@ class Editor:
         Args:
             save_as (bool): If True, prompt for a new save path.
         """
-        coliders_len = len(self.collider_data)
+        colliders_len = len(self.collider_data)
         tiles_len = self.get_canvas_data_length()
 
         if self.last_save_dir is None or save_as:
             self.get_save_path()
 
-        if (self.last_colliders_len != coliders_len or self.last_tiles_len != tiles_len) or save_as:
-            self.last_colliders_len = coliders_len
+        if (self.last_colliders_len != colliders_len or self.last_tiles_len != tiles_len) or save_as:
+            self.last_colliders_len = colliders_len
             self.last_tiles_len = tiles_len
 
             if self.last_save_dir is not None and self.filename is not None:
@@ -587,8 +595,6 @@ class Editor:
                                 cell = self._calculate_cell_position(vector(*coords))  # Convert to cell
                                 self.canvas_data[layer][cell] = canvas_obj  # Save object in new structure
                                 
-                        print(self.canvas_data)
-
                     # Process collider_data
                     if data[2]:
                         self.collider_data = data[2]
@@ -650,17 +656,15 @@ class Editor:
         Returns:
             int: The total number of elements in the canvas data.
         """
-        total_length = 0
-        for layer in self.canvas_data.values():
-            total_length += len(layer)
-        return total_length
+        return sum(len(layer) for layer in self.canvas_data.values())
+
 
     def check_project_updates(self):
         """Check for updates in the project and update the window caption accordingly."""
-        coliders_len = len(self.collider_data)
+        colliders_len = len(self.collider_data)
         tiles_len = self.get_canvas_data_length()
 
-        if self.last_colliders_len != coliders_len or self.last_tiles_len != tiles_len:
+        if self.last_colliders_len != colliders_len or self.last_tiles_len != tiles_len:
             pygame.display.set_caption(f'{self.filename}* - Редактор')
             return
 
@@ -705,10 +709,10 @@ class Editor:
         Returns:
             bool: True if the project was saved or no changes were detected, False otherwise.
         """
-        coliders_len = len(self.collider_data)
+        colliders_len = len(self.collider_data)
         tiles_len = self.get_canvas_data_length()
 
-        if self.last_colliders_len != coliders_len or self.last_tiles_len != tiles_len:
+        if self.last_colliders_len != colliders_len or self.last_tiles_len != tiles_len:
             if messagebox.askyesno('Сохранить проект', 'Хотите ли вы сохранить проект?'):
                 self.save_manager.export_scene(self.last_save_dir, self.filename, self.canvas_data, self.collider_data)
                 return True
@@ -757,13 +761,13 @@ class Editor:
         def draw_horizon_lines():
             """Draw the horizon lines on the display surface."""
             # Define the positions and heights of the horizon lines
-            horizont_lines = [
+            horizon_lines = [
                 (self.origin.y - 5, 10),
                 (self.origin.y - 12, 4),
                 (self.origin.y - 18, 2)
             ]
             # Draw each horizon line
-            for y, height in horizont_lines:
+            for y, height in horizon_lines:
                 rect = pygame.Rect(0, y, WINDOW_WIDTH, height)
                 pygame.draw.rect(self.display_surface, HORIZON_TOP_COLOR, rect)
 
@@ -801,7 +805,7 @@ class Editor:
             if 0 <= x < WINDOW_WIDTH:
                 pygame.draw.line(self.display_surface, '#d1aa9d', (x, 0), (x, WINDOW_HEIGHT))
 
-        # Draw horizontal lines
+        # Draw horizonal lines
         for i in range(self.rows + 1):
             y = origin_offset.y + i * TILE_SIZE
             if 0 <= y < WINDOW_HEIGHT:
@@ -837,53 +841,60 @@ class Editor:
         index = int(self.animation_index)
 
         for layer in range(1, self.layer + 1):
-            for cell, canvas in self.canvas_data[layer].items():
-                # Get position for drawing
-                if canvas.free_pos:
-                    pos = self.get_free_pos_coordinates(canvas.free_pos)  # Use free coordinates
-                else:
-                    pos = self.get_cell_coordinates(cell)  # Use cell coordinates
+            self.draw_layer(layer, dt, index)
 
-                # Check if an element is within the visible boundaries of the screen
-                if (pos[0] + canvas.size[0] > 0 and pos[0] < WINDOW_WIDTH and
-                        pos[1] + canvas.size[1] > 0 and pos[1] < WINDOW_HEIGHT):
+    def draw_layer(self, layer, dt, index):
+        for cell, canvas in self.canvas_data[layer].items():
+            pos = self.get_position(canvas, cell)
+            if self.is_within_visible_bounds(pos, canvas.size):
+                self.draw_canvas_item(canvas, pos, layer, dt, index)
 
-                    # Calculate alpha value based on the layer
-                    alpha = max(0, 255 - (self.layer - layer) * 15)
-                    draw_image = canvas.draw_image.copy()
+        if layer == 9:
+            for cell, collider in self.collider_data.items():
+                pos = self.get_cell_coordinates(cell)
+                if self.is_within_screen_bounds(pos):
+                    self.display_surface.blit(collider.draw_image, pos)
 
-                    if layer != self.layer:
-                        draw_image.set_alpha(alpha)
+    def get_position(self, canvas, cell):
+        if canvas.free_pos:
+            return self.get_free_pos_coordinates(canvas.free_pos)  # Use free coordinates
+        return self.get_cell_coordinates(cell)  # Use cell coordinates
 
-                    canvas.animation_update(dt, index)
-                    self.display_surface.blit(draw_image, pos)
+    def is_within_visible_bounds(self, pos, size):
+        return (pos[0] + size[0] > 0 and pos[0] < WINDOW_WIDTH and
+                pos[1] + size[1] > 0 and pos[1] < WINDOW_HEIGHT)
 
-                    # Draw text
-                    if canvas.id is not None:
-                        color = None
-                        if canvas.npc:
-                            color = 'blue'
-                        elif canvas.item:
-                            color = 'green'
-                        elif canvas.event:
-                            color = 'purple'
-                        elif canvas.enemy:
-                            color = 'red'
+    def is_within_screen_bounds(self, pos):
+        return (-64 < pos[0] < WINDOW_WIDTH and -64 < pos[1] < WINDOW_HEIGHT)
 
-                        if color:
-                            tile_name = self.tile_font.render(canvas.id, True, color)
-                            text_rect = tile_name.get_rect(center=(pos[0] + TILE_SIZE // 2, pos[1] - 10))
-                            self.display_surface.blit(tile_name, text_rect)
+    def draw_canvas_item(self, canvas, pos, layer, dt, index):
+        alpha = max(0, 255 - (self.layer - layer) * 15)
+        draw_image = canvas.draw_image.copy()
 
-            if layer == 9:
-                for cell, colider in self.collider_data.items():
-                    pos = self.get_cell_coordinates(cell)
+        if layer != self.layer:
+            draw_image.set_alpha(alpha)
 
-                    # Check if an element is within the visible boundaries of the screen
-                    if (pos[0] + 64 > 0 and pos[0] < WINDOW_WIDTH and
-                            pos[1] + 64 > 0 and pos[1] < WINDOW_HEIGHT):
-                        self.display_surface.blit(colider.draw_image, pos)
+        canvas.animation_update(dt, index)
+        self.display_surface.blit(draw_image, pos)
+        self.draw_canvas_text(canvas, pos)
 
+    def draw_canvas_text(self, canvas, pos):
+        if canvas.id is not None:
+            color = self.get_canvas_color(canvas)
+            if color:
+                tile_name = self.tile_font.render(canvas.id, True, color)
+                text_rect = tile_name.get_rect(center=(pos[0] + TILE_SIZE // 2, pos[1] - 10))
+                self.display_surface.blit(tile_name, text_rect)
+
+    def get_canvas_color(self, canvas):
+        if canvas.npc:
+            return 'blue'
+        if canvas.item:
+            return 'green'
+        if canvas.event:
+            return 'purple'
+        return 'red' if canvas.enemy else None
+    
     def run(self, dt):
         """
         Run the main loop of the editor.
@@ -933,7 +944,7 @@ class CanvasObject:
         self.id = None
 
         self.layer = layer  # Layer range: 3 - 14
-        self.colision_type = ''
+        self.collision_type = ''
 
         # Animation attributes
         self.animation = animation
@@ -1017,9 +1028,9 @@ class CanvasObject:
                 layer_required = True
                 self.id = self.get_npc_id()
 
-        if options['menu'] == 'colider':
-            self.colision = True
-            self.colision_type = os.path.basename(self.path_to_image).replace('.png', '')
+        if options['menu'] == 'collider':
+            self.collision = True
+            self.collision_type = os.path.basename(self.path_to_image).replace('.png', '')
             layer_required = True
 
         if layer_required:
@@ -1068,11 +1079,10 @@ class Button:
         if self.rect.collidepoint(mouse_pos_current):
             self.image = self.image2
             self.is_over = True
-            if mouse_buttons()[0]:  # Left mouse button is pressed
-                if not self.clicked:
-                    self.clicked = True
-                    if self.action:
-                        self.action()
+            if mouse_buttons()[0] and not self.clicked:
+                self.clicked = True
+                if self.action:
+                    self.action()
         else:
             self.image = self.image1
             self.is_over = False

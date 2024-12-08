@@ -1,8 +1,0 @@
-layer,coords,image_path,animation_path,is_item,is_npc,is_enemy,is_player,is_event,id,size
-9,"[-384, 128]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-384, 64]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-320, 64]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-256, 64]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-256, 128]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-320, 128]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
-9,"[-448, 128]",C:\Users\egora\Desktop\Вокруг земли за 80 дней\assets\graphics\tiles\land\A.png,,False,False,False,False,False,,"(64, 64)"
