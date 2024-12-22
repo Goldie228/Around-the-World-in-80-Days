@@ -1,6 +1,6 @@
 # Around the World in 80 Days
 
-A tile-based adventure game inspired by Jules Verne's classic novel, built with Python and Pygame.
+A tile-based adventure game inspired by Jules Verne's classic novel, created in Python and Pygame. This is a college project and you shouldn't expect much from it.
 
 ## Features
 
@@ -9,21 +9,19 @@ A tile-based adventure game inspired by Jules Verne's classic novel, built with 
 - Tile-based gameplay
 - Dynamic camera system
 - Custom animation system
-- Save/load functionality
-- Configurable controls
+- Save/Load functions (editor)
 
+## Layer System
 
-## Layering System
+The game uses a layer-by-layer rendering system to create depth and visual interest. Layers are defined as follows:
 
-The game utilizes a layered rendering system to create depth and visual interest. The layers are defined as follows:
-
-- **Layer 1**: Sky
-- **Layer 2**: Clouds
-- **Layers 3-4**: Background layers
-- **Layers 5-9**: Additional background layers
-- **Layer 10**: Main layer where the player, enemies, items, etc. are rendered
-- **Layers 11-13**: Foreground layers
-- **Layers 14-15**: Foreground background (non-infinite), such as foliage, trees, etc.
+- **Layer 1**:      Sky
+- **Layer 2**:      Clouds
+- **Layers 3-4**:   Background layers (infinite)
+- **Layers 5-9**:   Background tiles
+- **Layer 10**:     The main layer where the player, enemies, items, etc. are rendered.
+- **Layers 11-13**: Foreground tiles
+- **Layers 14-15**: Foreground Background
 
 ## Prerequisites
 
@@ -94,40 +92,36 @@ around-the-world-80-days/
 
 ## Development Setup
 
-### Required Dependencies
+### Creating an executable file
 
-```bash
-pip install pygame
-pip install pandas
-pip install auto-py-to-exe
-```
-
-### Building an Executable
-
-1. Install auto-py-to-exe:
+1. Make sure you have auto-py-to-exe installed:
 ```bash
 pip install auto-py-to-exe
 ```
 
-2. Run the builder:
-```bash
+2. Start the builder:
+``bash
 auto-py-to-exe
 ```
 
 3. In the GUI:
-   - Select `src/main.py` as the script location
-   - Choose 'One Directory' as output type
-   - Select additional files from `assets/`
-   - Configure icon and other settings
-   - Click 'Convert .py to .exe'
+   - Select `main.py` as the script location
+   - Select `One Directory` as the output type
+   - Select additional files from `assets/`.
+   - Customise the icon and other settings
+   - Click the ‘Convert .py to .exe’ button.
 
-## Controls
+## Control
 
-- **WASD** - Player movement
-- **Space** - Player jump
+### Game
+- **WASD** - move the player
+- **Space** - player jump
+- **F** - player attack
 
+### Editor
 - **Mouse** - Tile placement/selection
-- **Ctrl+S** - Save scene
+- **Ctrl+S** - Save Scene
+
 
 ## Contributing
 

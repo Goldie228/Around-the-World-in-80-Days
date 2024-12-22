@@ -36,8 +36,8 @@ EDITOR_DATA: EditorDataType = {
     2: {
         'style': 'player',
         'menu': 'player',
-        'menu_surf': str(PLAYER_PATH / 'idle_right'),
-        'graphics': str(PLAYER_PATH / 'idle_right')
+        'menu_surf': str(PLAYER_PATH / 'idle'),
+        'graphics': str(PLAYER_PATH / 'idle')
     },
     3: {
         'style': 'sky',
@@ -84,8 +84,8 @@ EDITOR_DATA: EditorDataType = {
     10: {
         'style': 'npc',
         'menu': 'npc',
-        'menu_surf': str(PLAYER_PATH / 'idle_right'),
-        'graphics': str(PLAYER_PATH / 'idle_right')
+        'menu_surf': str(PLAYER_PATH / 'idle'),
+        'graphics': str(PLAYER_PATH / 'idle')
     },
 }
 

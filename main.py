@@ -59,12 +59,12 @@ class Main:
 
     def _init_game(self) -> None:
         """Initialize game mode components"""
-        default_level = resource_path('assets/editor/saves/test9')
+        default_level = resource_path('assets/editor/saves/test10')
         self.levels_paths: Dict[int, str] = {
             0: default_level if os.path.exists(default_level) else None
         }
         self.level: Optional[Level] = None
-        self.player = Player(30, 60)
+        self.player = Player()
         self.camera = Camera()
         
         try:

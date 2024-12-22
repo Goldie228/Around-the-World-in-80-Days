@@ -276,7 +276,10 @@ class SaveManager:
 
             # Load image using cache
             if image_path not in image_cache:
-                image_cache[image_path] = load(image_path).convert_alpha()
+                try:
+                    image_cache[image_path] = load(image_path).convert_alpha()
+                except Exception as e:
+                    image_cache[image_path] = load('assets\\graphics\\texture_error\\error.png').convert_alpha()  # Замените на путь к базовому изображению
             image = image_cache[image_path]
 
             # Load animation using cache if animation_path is not NaN
