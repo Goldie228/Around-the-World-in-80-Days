@@ -16,6 +16,7 @@ COLLIDERS_PATH = GRAPHICS_PATH / 'colliders'
 EVENTS_PATH = GRAPHICS_PATH / 'events'
 PLAYER_PATH = GRAPHICS_PATH / 'player'
 TILES_PATH = GRAPHICS_PATH / 'tiles'
+BACKGROUNDS_PATH = GRAPHICS_PATH / 'backgrounds'
 
 # Editor data configuration
 EditorDataType = Dict[int, Dict[str, Union[str, Optional[str]]]]
@@ -64,28 +65,76 @@ EDITOR_DATA: EditorDataType = {
         'graphics': None
     },
     7: {
-        'style': 'terrain',
-        'menu': 'terrain1',
-        'menu_surf': str(TILES_PATH / 'land'),
-        'graphics': None
-    },
-    8: {
-        'style': 'terrain',
-        'menu': 'terrain2',
-        'menu_surf': str(TILES_PATH / 'water'),
-        'graphics': str(TILES_PATH / 'water/animation')
-    },
-    9: {
-        'style': 'terrain',
-        'menu': 'terrain3',
-        'menu_surf': str(TILES_PATH / 'background'),
-        'graphics': None
-    },
-    10: {
         'style': 'npc',
         'menu': 'npc',
         'menu_surf': str(PLAYER_PATH / 'idle'),
         'graphics': str(PLAYER_PATH / 'idle')
+    },
+    8: {
+        'style': 'terrain',
+        'menu': 'boards',
+        'menu_surf': str(TILES_PATH / 'boards'),
+        'graphics': None
+    },
+    9: {
+        'style': 'terrain',
+        'menu': 'danger',
+        'menu_surf': str(TILES_PATH / 'danger'),
+        'graphics': None
+    },
+    10: {
+        'style': 'terrain',
+        'menu': 'details',
+        'menu_surf': str(TILES_PATH / 'details'),
+        'graphics': None
+    },
+    11: {
+        'style': 'terrain',
+        'menu': 'dirt',
+        'menu_surf': str(TILES_PATH / 'dirt'),
+        'graphics': None
+    },
+    12: {
+        'style': 'terrain',
+        'menu': 'dirty_grass',
+        'menu_surf': str(TILES_PATH / 'dirty_grass'),
+        'graphics': None
+    },
+    13: {
+        'style': 'terrain',
+        'menu': 'earth_elements',
+        'menu_surf': str(TILES_PATH / 'earth_elements'),
+        'graphics': None
+    },
+    14: {
+        'style': 'terrain',
+        'menu': 'earth_elements',
+        'menu_surf': str(TILES_PATH / 'earth_elements'),
+        'graphics': None
+    },
+    15: {
+        'style': 'terrain',
+        'menu': 'ground',
+        'menu_surf': str(TILES_PATH / 'ground'),
+        'graphics': None
+    },
+    16: {
+        'style': 'terrain',
+        'menu': 'mushrooms',
+        'menu_surf': str(TILES_PATH / 'mushrooms'),
+        'graphics': None
+    },
+    17: {
+        'style': 'terrain',
+        'menu': 'wood',
+        'menu_surf': str(TILES_PATH / 'wood'),
+        'graphics': None
+    },
+    18: {
+        'style': 'terrain',
+        'menu': 'background',
+        'menu_surf': str(BACKGROUNDS_PATH),
+        'graphics': None
     },
 }
 
@@ -96,6 +145,7 @@ CAMERA_SPEED_ON_LAYER: CameraSpeedType = {
     layer: (0, 0) for layer in range(15)
 }
 
+
 # Color definitions
 class Colors:
     """Color constants for the editor"""
@@ -105,6 +155,7 @@ class Colors:
     BUTTON_BG: str = '#33323d'
     BUTTON_LINE: str = '#f5f1de'
     MENU_LINE: Tuple[int, int, int, int] = (21, 20, 26, 80)
+
 
 # Export color constants
 SKY_COLOR = Colors.SKY

@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from src.utils import resource_path
 from pygame.math import Vector2
 from src.settings import PLAYER_PATH, PLAYER_ANIMATION_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT
 
@@ -17,7 +18,7 @@ class Player:
         # Movement parameters
         self.speed = 6
         self.sprint_multiplier = 1.5
-        self.jump_power = 5
+        self.jump_power = 7
         
         # Physics parameters
         self.gravity = 0.1
@@ -62,10 +63,11 @@ class Player:
             frames[f'{animation}_left'] = []
 
             # Path to the animation folder
-            animation_path = os.path.join(PLAYER_PATH, animation)
+            animation_path = resource_path(os.path.join(PLAYER_PATH, animation))
 
             # Check if the animation folder exists
             if not os.path.exists(animation_path):
+                print(f"Warning: Animation folder '{animation_path}' does not exist.")
                 continue
 
             # Load frames for right animation
@@ -91,7 +93,8 @@ class Player:
         self._handle_quit_event()
         self._handle_movement_input()
 
-    def _handle_quit_event(self) -> None:
+    @staticmethod
+    def _handle_quit_event() -> None:
         """Handle game quit event"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -259,7 +262,7 @@ class Player:
             # Vertical collisions
             if up:
                 self.rect.top = collider.pos[1]
-                self.direction.y = 0
+                self.direction.y = 0.4
             if down:
                 self.rect.bottom = collider.pos[1] + collider.size
                 self.direction.y = 0

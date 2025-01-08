@@ -1,11 +1,11 @@
-import os
-import sys
+import json
 import pygame
 import pygame.locals as pl
 from pygame.image import load
 from pygame.math import Vector2 as vector
 from typing import Dict, Optional
 
+from src.utils import resource_path
 from src.settings import WINDOW_WIDTH, WINDOW_HEIGHT, EDITOR_MODE
 
 if EDITOR_MODE:
@@ -15,22 +15,13 @@ else:
     from src.game.player import Player
     from src.game.camera import Camera
 
-def resource_path(relative_path: str) -> str:
-    """Get absolute path to resource for PyInstaller"""
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    
-    return os.path.join(base_path, relative_path)
-
 
 class Main:
     """Main game class handling initialization and game loop"""
     
     def __init__(self):
         """Initialize game window and core components"""
+        self.level = None
         self._init_pygame()
         self._init_game_components()
 
@@ -59,10 +50,9 @@ class Main:
 
     def _init_game(self) -> None:
         """Initialize game mode components"""
-        default_level = resource_path('assets/editor/saves/test10')
-        self.levels_paths: Dict[int, str] = {
-            0: default_level if os.path.exists(default_level) else None
-        }
+        levels_file_path = resource_path('assets/data/levels.json')  # Path to your JSON file
+        levels_data = self.load_levels_from_json(levels_file_path)  # Load levels from JSON
+        self.levels_paths: Dict[int, str] = levels_data['levels']  # Extract levels from JSON
         self.level: Optional[Level] = None
         self.player = Player()
         self.camera = Camera()
@@ -71,8 +61,7 @@ class Main:
             self.change_level(0)
         except Exception as e:
             print(f"Error initializing game: {e}")
-            # Handle initialization error (e.g., show error message, exit game)
-
+            
     def _setup_cursor(self) -> None:
         """Setup custom mouse cursor"""
         cursor_path = resource_path('assets/graphics/cursors/mouse.png')
@@ -85,21 +74,30 @@ class Main:
         self.transition.active = True
         self.change_level(index)
 
+    @staticmethod
+    def load_levels_from_json(file_path: str) -> Dict[int, str]:
+        """Load levels from a JSON file"""
+        with open(file_path, 'r') as file:
+            return json.load(file)
+
     def change_level(self, index: int) -> None:
         """Change current level to specified index
         
         Args:
             index: Level index to load
         """
+        index = str(index)
+
         if index not in self.levels_paths or not self.levels_paths[index]:
             print(f"Warning: No level found at index {index}")
+            self.level = None  # Ensure level is set to None if not found
             return
         
         try:
             self.level = Level(self.levels_paths[index], self.switch, self.player)
         except Exception as e:
             print(f"Error changing level: {e}")
-            # Handle level change error
+            self.level = None
 
     def _run_editor(self, dt: float) -> None:
         """Run editor mode update loop"""
@@ -108,11 +106,12 @@ class Main:
 
     def _run_game(self, dt: float) -> None:
         """Run game mode update loop"""
-        self.transition.display(dt)
-        self.player.event_loop()
-        self.player.update(self.level.collider_data.values(), dt)
-        self.camera.update(dt, self.level, self.player)
-        pygame.display.update()
+        if self.level is not None:
+            self.transition.display(dt)
+            self.player.event_loop()
+            self.player.update(self.level.collider_data.values(), dt)
+            self.camera.update(dt, self.level, self.player)
+            pygame.display.update()
 
     def run(self) -> None:
         """Main game loop"""

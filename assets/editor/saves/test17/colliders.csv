@@ -1,0 +1,22 @@
+coords,image_path,collider_type
+"[-128, 0]",graphics\colliders\d.png,d
+"[-64, 0]",graphics\colliders\d.png,d
+"[-64, -64]",graphics\colliders\d.png,d
+"[0, -64]",graphics\colliders\d.png,d
+"[64, -64]",graphics\colliders\d.png,d
+"[128, -64]",graphics\colliders\d.png,d
+"[128, 0]",graphics\colliders\d.png,d
+"[64, 0]",graphics\colliders\d.png,d
+"[64, 64]",graphics\colliders\d.png,d
+"[0, 64]",graphics\colliders\d.png,d
+"[-64, 64]",graphics\colliders\d.png,d
+"[-192, 0]",graphics\colliders\d.png,d
+"[-192, -64]",graphics\colliders\d.png,d
+"[-128, -64]",graphics\colliders\d.png,d
+"[-128, -128]",graphics\colliders\d.png,d
+"[-64, -128]",graphics\colliders\d.png,d
+"[-64, -192]",graphics\colliders\d.png,d
+"[0, -192]",graphics\colliders\d.png,d
+"[0, -128]",graphics\colliders\d.png,d
+"[64, -128]",graphics\colliders\d.png,d
+"[0, 0]",graphics\colliders\d.png,d

@@ -47,6 +47,15 @@ class SaveManager:
         ]
 
     @staticmethod
+    def _get_relative_path(full_path: str) -> str:
+        if not full_path:
+            return
+
+        current_dir = os.path.abspath(".")
+        relative_path = os.path.relpath(full_path, current_dir)
+        return relative_path
+
+    @staticmethod
     def _get_start_cell_coordinates(cell):
         """
         Get the starting cell coordinates.
@@ -122,22 +131,6 @@ class SaveManager:
                     inner_index = paths.index(image_path)
                     return index, inner_index
         return None, None
-    
-    def _get_relative_path(self, file_path, root_path):
-        """
-        Get the relative path of a file. If the file does not exist, return an empty string.
-
-        Args:
-            file_path (str): The absolute path to the file.
-            root_path (str): The root path to make the file path relative to.
-
-        Returns:
-            str: The relative path to the file or an empty string if the file does not exist.
-        """
-        if not file_path or not os.path.exists(file_path):
-            print(f"Warning: No file '{file_path}' found.")
-            return ''
-        return os.path.relpath(file_path, root_path)
 
     def export_tiles(self, path, canvas_data):
         """
@@ -148,7 +141,7 @@ class SaveManager:
             canvas_data (dict): The canvas data.
         """
         if not path or not canvas_data:
-            raise ValueError("path and canvas_data cannot be None or empty.")
+            print("path and canvas_data cannot be None or empty.")
 
         export_data = {
             'layer': [],
@@ -170,8 +163,8 @@ class SaveManager:
 
                 export_data['layer'].append(layer)
                 export_data['coords'].append(json.dumps(pos))
-                export_data['image_path'].append(canvas.path_to_image or '')
-                export_data['animation_path'].append(canvas.animation_dir or '')
+                export_data['image_path'].append(self._get_relative_path(canvas.path_to_image or ''))
+                export_data['animation_path'].append(self._get_relative_path(canvas.animation_dir or ''))
                 export_data['is_item'].append(canvas.item)
                 export_data['is_npc'].append(canvas.npc)
                 export_data['is_enemy'].append(canvas.enemy)
@@ -191,9 +184,6 @@ class SaveManager:
             path (str): The path to the CSV file.
             collider_data (dict): The collider data.
         """
-        if not path or not collider_data:
-            raise ValueError("path and collider_data cannot be None or empty.")
-
         export_data = {
             'coords': [],
             'image_path': [],
@@ -204,7 +194,7 @@ class SaveManager:
             pos = self._get_start_free_pos_coordinates(cell)
 
             export_data['coords'].append(json.dumps(pos))
-            export_data['image_path'].append(collider.path_to_image or '')
+            export_data['image_path'].append(self._get_relative_path(collider.path_to_image or ''))
             export_data['collider_type'].append(collider.collision_type)
 
         df = pd.DataFrame(export_data)
@@ -410,8 +400,9 @@ class SaveManager:
             canvas_data (dict): The canvas data.
             collider_data (dict): The collider data.
         """
-        if not dir_path or not filename or not canvas_data or not collider_data:
-            raise ValueError("dir_path, filename, canvas_data, and collider_data cannot be None or empty.")
+        if not dir_path or not filename:
+            print('Save Error')
+            return
 
         dir_path = os.path.join(dir_path, filename)
 

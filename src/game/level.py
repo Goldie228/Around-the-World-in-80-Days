@@ -10,7 +10,7 @@ from src.save_manager import SaveManager
 
 class Level:
     """Represents the game level"""
-    
+
     def __init__(self, path, switch, player):
         """Initialize level with path, switch, and player"""
         # Main setup
@@ -147,7 +147,8 @@ class Level:
             canvas.animation_update(index)
             self.display_surface.blit(canvas.draw_image, screen_pos)
 
-    def _ensure_cloud_data(self, data):
+    @staticmethod
+    def _ensure_cloud_data(data):
         """Ensure all necessary cloud data exists"""
         if 'offset' not in data:
             data['offset'] = 0
@@ -171,7 +172,8 @@ class Level:
             data['offset'] = self.start_width - WINDOW_WIDTH - cloud_width
             data['y_offset'] = random.uniform(-200, 150)
 
-    def _is_cloud_visible(self, pos, width, height):
+    @staticmethod
+    def _is_cloud_visible(pos, width, height):
         """Check if cloud is within visible screen bounds"""
         return (pos[0] + width > -width and 
                 pos[0] < WINDOW_WIDTH + width and
@@ -280,7 +282,6 @@ class Level:
         layer_data['vector'].x = self.origin.x * layer_data['delay']
         layer_data['vector'].y = self.origin.y - (self.origin.y * (layer_data['delay'] * 0.7)) + 60
 
-
     def display_foreground_layers(self, index):
         """Render foreground layers with parallax effect"""
         for layer_data in self.foreground_layers.values():
@@ -372,8 +373,8 @@ class Level:
         self.target.y = camera.centery
 
     def get_free_pos_coordinates(self, pos):
-        """Convert local coordinates to screen coordinates"""
-        return (pos[0] + self.origin.x, pos[1] + self.origin.y)
+        """Convert local coordina screen coordinates"""
+        return pos[0] + self.origin.x, pos[1] + self.origin.y
 
     def draw_layers(self, index):
         """Draw all game layers with proper ordering"""
@@ -397,11 +398,12 @@ class Level:
                 canvas.animation_update(index)
                 self.display_surface.blit(canvas.draw_image, pos)
 
-    def _is_object_visible(self, pos, size):
+    @staticmethod
+    def _is_object_visible(pos, size):
         """Check if object is within screen bounds"""
-        return (pos[0] + size[0] > 0 and 
+        return (pos[0] + size[0] > 0 and
                 pos[0] < WINDOW_WIDTH and
-                pos[1] + size[1] > 0 and 
+                pos[1] + size[1] > 0 and
                 pos[1] < WINDOW_HEIGHT)
 
     def draw(self, dt, coords=(0, 0)):

@@ -37,6 +37,8 @@ class Editor:
         self._init_menu()
 
         # Selection
+        self.selection_index = None
+        self.selection_inner_index = None
         self._init_selection()
 
         # Canvas
@@ -142,7 +144,8 @@ class Editor:
         distance_to_origin = vector(mouse_pos()) - self.origin
         return self._calculate_cell_position(distance_to_origin)
 
-    def _calculate_cell_position(self, distance: vector) -> tuple[int, int]:
+    @staticmethod
+    def _calculate_cell_position(distance: vector) -> tuple[int, int]:
         """Calculate cell position from distance vector.
         
         Args:
@@ -180,7 +183,7 @@ class Editor:
             tuple[float, float]: Screen coordinates.
         """
         x, y = pos
-        return (x + self.origin.x, y + self.origin.y)
+        return x + self.origin.x, y + self.origin.y
 
     # Validations
     def validate_selection_index(self) -> None:
@@ -189,6 +192,7 @@ class Editor:
             self.selection_index,
             len(self.menu.indexes) - 1
         ))
+
         self.selection_index = max(
             self.start_page,
             min(self.selection_index, self.end_page)
@@ -604,6 +608,12 @@ class Editor:
             else:
                 self.show_error("Ошибка", "Не удалось импортировать сцену. Путь или имя файла не указаны.")
 
+    @staticmethod
+    def get_relative_path(full_path: str) -> str:
+        parent_folder = os.path.commonpath([full_path, os.path.abspath(".")])
+        relative_path = os.path.relpath(full_path, parent_folder)
+        return relative_path
+
     def get_save_path(self):
         """Prompt the user to select a directory and filename for saving."""
         root = tk.Tk()
@@ -620,7 +630,8 @@ class Editor:
             return
 
         self.filename = filename
-        self.last_save_dir = directory
+        self.last_save_dir = self.get_relative_path(directory)
+        print(self.last_save_dir)
 
     def get_import_path(self):
         """Prompt the user to select a directory for importing a project."""
@@ -714,7 +725,10 @@ class Editor:
 
         if self.last_colliders_len != colliders_len or self.last_tiles_len != tiles_len:
             if messagebox.askyesno('Сохранить проект', 'Хотите ли вы сохранить проект?'):
-                self.save_manager.export_scene(self.last_save_dir, self.filename, self.canvas_data, self.collider_data)
+                if self.last_save_dir is not None:
+                    self.save_manager.export_scene(self.last_save_dir, self.filename, self.canvas_data, self.collider_data)
+                    return True
+                self.save_scene(True)
                 return True
             return False
 
