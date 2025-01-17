@@ -149,9 +149,9 @@ CAMERA_SPEED_ON_LAYER: CameraSpeedType = {
 # Color definitions
 class Colors:
     """Color constants for the editor"""
-    SKY: str = '#ddc6a1'
-    HORIZON: str = '#f5f1de'
-    HORIZON_TOP: str = '#d1aa9d'
+    SKY: str = '#6bc6ff'
+    HORIZON: str = '#6bc6ff'
+    HORIZON_TOP: str = '#6bc6ff'
     BUTTON_BG: str = '#33323d'
     BUTTON_LINE: str = '#f5f1de'
     MENU_LINE: Tuple[int, int, int, int] = (21, 20, 26, 80)

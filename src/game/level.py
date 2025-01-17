@@ -432,7 +432,7 @@ class Collider:
     
     def __init__(self, layer=10, pos=None, collider_type=None, size=64):
         """Initialize collider with position and type"""
-        self.pos = pos
+        self.pos = pos  # Position of the collider
         self.layer = layer  # Layer range: 3 - 14
         self.collider_type = collider_type
         self.size = size

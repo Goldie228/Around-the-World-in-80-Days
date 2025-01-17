@@ -3,7 +3,7 @@ import sys
 import os
 from src.utils import resource_path
 from pygame.math import Vector2
-from src.settings import PLAYER_PATH, PLAYER_ANIMATION_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT
+from src.settings import PLAYER_PATH, PLAYER_ANIMATION_SPEED, PLAYER_IMAGE_WIDTH, PLAYER_IMAGE_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_IMAGE_INDENT
 
 
 class Player:
@@ -12,16 +12,20 @@ class Player:
     def __init__(self):
         """Initialize player with dimensions and physics properties"""
         # Physical properties
+        self.origin = Vector2(0, 0)
         self.rect = pygame.Rect(0, 0, PLAYER_WIDTH, PLAYER_HEIGHT)
         self.direction = Vector2(0, 0)
         
         # Movement parameters
+        self.normal_animation_speed = PLAYER_ANIMATION_SPEED
+        self.fast_animation_speed = int(PLAYER_ANIMATION_SPEED * 1.5)
+        self.animation_speed = self.normal_animation_speed
         self.speed = 6
         self.sprint_multiplier = 1.5
-        self.jump_power = 7
+        self.jump_power = 15
         
         # Physics parameters
-        self.gravity = 0.1
+        self.gravity = 0.2
         self.terminal_velocity = 10
         self.on_ground = False
         
@@ -30,7 +34,7 @@ class Player:
         self.end_width = 0
 
         # Animation parameters
-        self.animation_names = ['idle', 'run', 'jump', 'slide', 'attack', 'jump_attack']  # Animation names
+        self.animation_names = ['idle', 'walk', 'run', 'jump', 'slide']  # Animation names
         self.animation_key = self.animation_names[0]
         self.animation_frames = self.load_animation_frames()  # Load animation frames
         if self.animation_frames:  # Check if frames are loaded
@@ -41,14 +45,15 @@ class Player:
             print("Warning: No animation frames loaded. Using a default image.")
             self.image = pygame.Surface((PLAYER_WIDTH, PLAYER_HEIGHT))  # Create a blank surface as a fallback image
 
-        self.animation_speed = PLAYER_ANIMATION_SPEED  # Set animation speed
         self.last_direction = 'idle'  # Store last direction
         self.is_jumping = False  # Track if the player is jumping
         self.is_sliding = False  # Track if the player is sliding
         self.current_slide_speed = 0  # Current speed during sliding
-        self.slide_duration = 0.5  # Duration of the slide in seconds
+        self.slide_duration = 0.3  # Duration of the slide in seconds
         self.slide_timer = 0  # Timer for the slide duration
         self.slide_deceleration = 0.1  # Deceleration factor for sliding
+        self.right_barrier = False  # Track if the player is on the right barrier
+        self.left_barrier = False  # Track if the player is on the left barrier
         self.is_sprinting = False  # Track if the player is sprinting
         self.is_attacking = False  # Track if the player is attacking
         self.attack_timer = 0  # Timer for the attack duration
@@ -75,7 +80,7 @@ class Player:
                 if image_file.endswith('.png'):  # Check if the file is a PNG
                     image_path = os.path.join(animation_path, image_file)
                     image = pygame.image.load(image_path).convert_alpha()
-                    image = pygame.transform.scale(image, (PLAYER_WIDTH, PLAYER_HEIGHT))  # Scale the image
+                    image = pygame.transform.scale(image, (PLAYER_IMAGE_WIDTH, PLAYER_IMAGE_HEIGHT))  # Scale the image
                     frames[f'{animation}_right'].append(image)
 
             # Load frames for left animation (flip)
@@ -137,26 +142,35 @@ class Player:
         # Left movement
         if keys[pygame.K_a] and not keys[pygame.K_d]:
             if self.rect.left > self.start_width:
-                self.direction.x = -1
+                self.direction.x = -1  # sourcery skip: swap-if-expression
+                self.animation_key = 'walk_left' if keys[pygame.K_LSHIFT] else 'run_left'
                 self.last_direction = 'run_left'  # Update last direction
-        # Right movement
         elif keys[pygame.K_d] and not keys[pygame.K_a]:
             if self.rect.right < self.end_width:
                 self.direction.x = 1
+                self.animation_key = 'walk_right' if keys[pygame.K_LSHIFT] else 'run_right'
                 self.last_direction = 'run_right'  # Update last direction
 
         # Check for sprinting
         if keys[pygame.K_LSHIFT]:
             self.is_sprinting = True  # Set sprinting state
+            self.animation_speed = self.fast_animation_speed
         else:
             self.is_sprinting = False  # Reset sprinting state
+            self.animation_speed = self.normal_animation_speed
 
         # Apply speed and sprint
         if self.direction.x != 0:
             base_speed = self.speed
             if self.is_sprinting:
                 base_speed *= self.sprint_multiplier
+                self.animation_key = 'run_right' if self.direction.x > 0 else 'run_left'  # Set run animation
+            else:
+                self.animation_key = 'walk_right' if self.direction.x > 0 else 'walk_left'  # Set walk animation
             self.direction.x *= base_speed
+        else:
+            # If not moving, set to idle animation
+            self.animation_key = 'idle_right' if self.last_direction in ['walk_right', 'run_right'] else 'idle_left'
 
     def _process_jump(self, keys) -> None:
         """Handle jump input"""
@@ -215,8 +229,8 @@ class Player:
             self.current_slide_speed = self.speed
 
         self._apply_gravity()
-        self._update_position()
         self._handle_collisions(colliders)
+        self._update_position()
         self._update_animation(dt)
 
     def _apply_gravity(self) -> None:
@@ -225,9 +239,12 @@ class Player:
 
     def _update_position(self) -> None:
         """Update player position based on velocity"""
-        if self.is_sliding:
+        if self.is_sliding and -1 < self.direction.y < 1 and not self.right_barrier and not self.left_barrier:
             # Calculate new position based on current sliding speed
-            new_x = self.rect.x + self.current_slide_speed * (1 if self.last_direction == 'run_right' else -1)
+            if self.last_direction in ('run_right', 'walk_right'):
+                new_x = self.rect.x + self.current_slide_speed * 1.5
+            else:
+                new_x = self.rect.x - self.current_slide_speed * 1.5
 
             # Check boundaries
             if new_x < self.start_width:
@@ -239,6 +256,8 @@ class Player:
 
             self.rect.x = new_x  # Update the player's position
         else:
+            if self.is_sliding:
+                self.is_sliding = False  # Stop sliding
             self.rect.x += self.direction.x
             self.rect.y += self.direction.y
 
@@ -250,22 +269,28 @@ class Player:
             # Horizontal collisions
             if left:
                 self.rect.left = collider.pos[0]
-                self.direction.x = 0
+                self.left_barrier = True
                 if self.is_sliding:
                     self.is_sliding = False  # Stop sliding on collision
+            else:
+                self.left_barrier = False
+            
             if right:
                 self.rect.right = collider.pos[0] + collider.size
-                self.direction.x = 0
+                self.right_barrier = True
                 if self.is_sliding:
                     self.is_sliding = False  # Stop sliding on collision
+            else:
+                self.right_barrier = False
             
             # Vertical collisions
-            if up:
-                self.rect.top = collider.pos[1]
-                self.direction.y = 0.4
-            if down:
-                self.rect.bottom = collider.pos[1] + collider.size
-                self.direction.y = 0
+            if up:  # Only handle upward collisions if falling
+                self.direction.y = 2  # Stop upward movement
+                
+            if down and self.rect.bottom <= collider.pos[1] + PLAYER_HEIGHT and self.direction.y >= 0:  # Check if falling onto the collider
+                if self.rect.bottom < collider.pos[1] + PLAYER_HEIGHT:
+                    self.rect.bottom = collider.pos[1] + collider.size  # Snap to the bottom of the collider
+                self.direction.y = 0.001  # Stop upward movement
                 self.on_ground = True  # Set on_ground to True when landing
                 self.is_jumping = False  # Reset jumping state when landing
 
@@ -286,10 +311,13 @@ class Player:
             self.animation_key = 'jump_right' if self.last_direction == 'run_right' else 'jump_left'
             self.current_frame = 0  # Reset to the first frame of the jump animation
         elif self.on_ground and self.direction.x != 0:  # If the player is moving on the ground
-            self.animation_key = 'run_right' if self.direction.x > 0 else 'run_left'
+            if self.is_sprinting:
+                self.animation_key = 'run_right' if self.direction.x > 0 else 'run_left'
+            else:
+                self.animation_key = 'walk_right' if self.direction.x > 0 else 'walk_left'
             self.current_frame = 0  # Reset to the first frame of the run animation
         elif self.on_ground and self.direction.x == 0:  # If the player is idle
-            self.animation_key = 'idle_right' if self.last_direction == 'run_right' else 'idle_left'
+            self.animation_key = 'idle_right' if self.last_direction in ['walk_right', 'run_right'] else 'idle_left'
             self.current_frame = 0  # Reset to the first frame of the idle animation
 
         # Update the current frame of the animation
@@ -297,7 +325,7 @@ class Player:
         self.current_frame = int(self.frame)
 
         if self.current_frame >= len(self.animation_frames[self.animation_key]):
-            if self.animation_key in ['jump_left', 'jump_right']:
+            if self.animation_key in ('jump_left', 'jump_right'):
                 self.current_frame = len(self.animation_frames[self.animation_key]) - 1  # Hold on the last frame
             else:
                 self.current_frame = 0  # Reset to the first frame for other animations
@@ -311,5 +339,6 @@ class Player:
         self.start_width = start_width
         self.end_width = end_width
         
-        draw_rect = self.rect.move(origin.x, origin.y)
+        draw_rect = self.rect.move(origin.x - PLAYER_IMAGE_INDENT, origin.y)
+        self.origin = origin
         screen.blit(self.image, draw_rect)  # Draw the current player image
